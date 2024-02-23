@@ -1,0 +1,12 @@
+---
+title: "Assignment week 1"
+author: "Signe G"
+date: "2024-02-23"
+output: html_document
+---
+```{r}
+library(epiwraps)
+sessionInfo()
+
+```
+
