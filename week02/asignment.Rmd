@@ -1,0 +1,91 @@
+---
+title: "assignment"
+author: "Signe G"
+date: "2024-03-04"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+suppressPackageStartupMessages({
+  library(AnnotationHub) 
+  library(ensembldb)     
+  library(GenomicRanges)  
+  library(epiwraps)      
+})
+  
+```
+
+**The mouse (Mus Musculus) EnsDb object, version 102, genome build GRCm38:**
+```{r}
+Ah <- AnnotationHub()
+q <- query(Ah, c("Mus Musculus", "ensembl", "GRCm38", "version 102"))
+q
+```
+```{r}
+ensbd <- Ah[["AH89211"]]
+ensbd
+```
+
+**The mouse genome sequence ( dna_sm ) in TwoBit/2bit format for GRCm38:**
+```{r}
+q1 <- query(Ah, c("GRCm38", "TwoBit", "dna_sm"))
+q1
+
+```
+```{r}
+ensbd1 <- Ah[["AH49775"]]
+ensbd1
+
+```
+
+**The drosophila melanogaster genome sequence ( dna_sm ) in TwoBit/2bit format for BDGP6:**
+```{r}
+q2 <- query(Ah, c("Drosophila melanogaster", "BDGP6", "dna_sm", "TwoBit"))
+q2
+```
+```{r}
+ensbd2 <- Ah[["AH49674"]]
+ensbd2
+```
+
+**Part 2:**
+
+```{r}
+g <- genes(ensbd)
+pcg <- g[which(g$gene_biotype=="protein_coding")]
+
+# Count unique Ensembl gene IDs
+ugids <- length(unique(pcg$gene_id))
+ugids
+
+# Count unique gene symbols
+ugs <- length(unique(pcg$gene_name))
+ugs
+
+# Print the results
+cat("Number of unique Ensembl gene IDs for protein-coding genes:", ugids, "\n")
+cat("Number of unique gene symbols for protein-coding genes:", ugs, "\n")
+
+```
+
+**Plot the distribution of spliced length of protein coding transcripts**
+```{r}
+ex <- exons(ensbd)
+#Exons per transcript filtered by protein coding genes
+exsPerTx <- exonsBy(ensbd, column=c("tx_id","tx_biotype"), 
+                    filter=TxBiotypeFilter("protein_coding"))
+exsPerTx
+
+# Calculate spliced length for each transcript
+sl <- sum(width(exsPerTx))
+
+# Plot the distribution of spliced lengths
+hist(sl, main = "Distribution of Spliced Lengths of Protein-Coding Transcripts",
+     xlab = "Spliced Length", ylab = "Frequency")
+
+```
+
