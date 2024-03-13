@@ -1,0 +1,115 @@
+---
+title: "assignment"
+author: "Signe G"
+date: "2024-03-10"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+suppressPackageStartupMessages({
+  library(AnnotationHub)
+  library(Rsubread) 
+  library(rtracklayer) 
+  library(Biostrings) 
+  library(Rfastp) 
+  library(epiwraps)
+  library(GenomicRanges)
+  library(ensembldb)
+})
+ah <- AnnotationHub()
+```
+```{r}
+options(timeout=3600) 
+dir.create("raw2")
+download.file("https://www.encodeproject.org/files/ENCFF127RRR/@@download/ENCFF127RRR.fastq.gz", dest="raw2/CTCF.fastq.gz", mode = "wb")
+```
+
+```{r}
+#QC and trimming
+dir.create("rfastp.trimmed2")
+
+fastq_file <- "raw2/CTCF.fastq.gz"
+
+qc <- lapply(fastq_file, FUN=function(x){
+  Rfastp::rfastp(x, thread=4, overrepresentationAnalysis=TRUE,
+                 outputFastq=file.path("rfastp.trimmed2/",gsub("\\.fastq\\.gz$","",basename(x))))
+})
+```
+```{r}
+q <- query(ah, c("drosophila", "ensembl", "BDGP6", "dna_sm"))
+q
+```
+
+```{r}
+genome <- ah[["AH49674"]]
+dir.create("BDGP6_genome")
+export(import.2bit(genome), "BDGP6_genome/genome.fasta.gz", compress=TRUE)
+Rsubread::buildindex("BDGP6_genome/rsubread", reference="BDGP6_genome/genome.fasta.gz")
+```
+
+```{r}
+#Allignment
+dir.create("aligned")
+align.stats <- Rsubread::align(index="BDGP6_genome/rsubread", type="dna",
+                               readfile1= ("rfastp.trimmed2/CTCF_R1.fastq.gz"),
+                               output_file=c("aligned/CTCF.bam"),
+                               nthreads=3, sortReadsByCoordinates=TRUE)
+align.stats
+```
+```{r}
+#Peaks
+dir.create("peaks")
+peaks <- callPeaks("aligned/CTCF.bam", fragLength=50L)
+rtracklayer::export.bed(peaks, "peaks/peaks.bed")
+
+
+plotSignalTracks(files = "aligned/CTCF.bam", region = peaks[7], extend = 1000)
+```
+
+```{r}
+#According to the summary of align_stat the total reads are 3,816,990. We have 3,504,769 reads that were mapped. The procentage is therefore:
+(3504769/3816990)*100
+#91,8% of the total reads were mapped
+
+```
+```{r}
+#Number of peaks found
+num_peaks <- length(peaks)
+num_peaks #2857 peaks found
+```
+
+```{r}
+#Peak that is inside a gene
+q1 <- query(ah, c("drosophila", "ensembl", "BDGP6", "EnsDb"))
+q1
+
+genome_ensdb <- ah[["AH116255"]]
+g <- genes(genome_ensdb)
+```
+
+
+```{r}
+# Intersect peaks with protein-coding genes
+overlap <- findOverlaps(peaks, g)
+
+if (length(overlap) > 0) {
+  cat("At least one peak overlaps with a gene.\n")
+  overlapping_genes <- g[subjectHits(overlap)]
+  cat("The overlapping genes are:\n")
+  print(overlapping_genes)
+} else {
+  cat("No peaks overlap with any genes.\n")
+}
+
+```
+
+```{r}
+#Plot one of the peaks
+myGreatPeak <- "2L:25402-65404"
+plotSignalTracks(files = "aligned/CTCF.bam", region=myGreatPeak, extend = 1000)
+```
+
