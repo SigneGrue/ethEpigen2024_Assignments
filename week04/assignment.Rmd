@@ -1,0 +1,112 @@
+---
+title: "assignment"
+author: "Signe G"
+date: "2024-03-17"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+suppressPackageStartupMessages({
+  library(AnnotationHub)
+  library(rtracklayer)
+  library(epiwraps)
+  library(GenomicRanges)
+  library(R.utils)
+})
+ah <- AnnotationHub()
+
+```
+
+*H3K4me3*
+```{r, eval=FALSE}
+dir.create("week4")
+download.file("https://www.encodeproject.org/files/ENCFF406BED/@@download/ENCFF406BED.bed.gz", dest="week4/H3K4me3.bed.gz", mode = "wb")
+gunzip("C:/Users/grue/Documents/Universitetet/Udveksling 2024/Courses/Bioinformatics for regulatory genomics/Assignements/Week 4/week4/H3K4me3.bed.gz")
+
+```
+
+*H3K4me1*
+```{r, eval=FALSE}
+download.file("https://www.encodeproject.org/files/ENCFF049NIJ/@@download/ENCFF049NIJ.bed.gz", dest="week4/H3K4me1.bed.gz", mode = "wb")
+gunzip("C:/Users/grue/Documents/Universitetet/Udveksling 2024/Courses/Bioinformatics for regulatory genomics/Assignements/Week 4/week4/H3K4me1.bed.gz")
+```
+
+*H3K27ac*
+```{r, eval=FALSE}
+download.file("https://www.encodeproject.org/files/ENCFF360VIS/@@download/ENCFF360VIS.bed.gz", dest="week4/H3K27ac.bed.gz", mode = "wb")
+gunzip("C:/Users/grue/Documents/Universitetet/Udveksling 2024/Courses/Bioinformatics for regulatory genomics/Assignements/Week 4/week4/H3K27ac.bed.gz")
+```
+
+*H3K27me3*
+```{r, eval=FALSE}
+download.file("https://www.encodeproject.org/files/ENCFF276FGU/@@download/ENCFF276FGU.bed.gz", dest="week4/H3K27me3.bed.gz", mode = "wb")
+gunzip("C:/Users/grue/Documents/Universitetet/Udveksling 2024/Courses/Bioinformatics for regulatory genomics/Assignements/Week 4/week4/H3K27me3.bed.gz")
+```
+
+*P300*
+```{r, eval=FALSE}
+download.file("https://www.encodeproject.org/files/ENCFF460EOA/@@download/ENCFF460EOA.bed.gz", dest="week4/P300.bed.gz", mode = "wb")
+gunzip("C:/Users/grue/Documents/Universitetet/Udveksling 2024/Courses/Bioinformatics for regulatory genomics/Assignements/Week 4/week4/P300.bed.gz")
+
+```
+
+*Of the p300 peaks, what proportion overlap each of the marks?*
+```{r}
+peaks_p300 <- rtracklayer::import("P300.bed", format="narrowPeak")
+peaks_H3K4me3 <- rtracklayer::import("C:/Users/grue/Documents/Universitetet/Udveksling 2024/Courses/Bioinformatics for regulatory genomics/Assignements/Week 4/week4/H3K4me3.bed", format="narrowPeak")
+peaks_H3K4me1 <- rtracklayer::import("C:/Users/grue/Documents/Universitetet/Udveksling 2024/Courses/Bioinformatics for regulatory genomics/Assignements/Week 4/week4/H3K4me1.bed", format="narrowPeak")
+peaks_H3K27ac <- rtracklayer::import("C:/Users/grue/Documents/Universitetet/Udveksling 2024/Courses/Bioinformatics for regulatory genomics/Assignements/Week 4/week4/H3K27ac.bed", format="narrowPeak")
+peaks_H3K27me3 <- rtracklayer::import("C:/Users/grue/Documents/Universitetet/Udveksling 2024/Courses/Bioinformatics for regulatory genomics/Assignements/Week 4/week4/H3K27me3.bed", format="narrowPeak")
+
+```
+*For H3K4me3*
+```{r}
+# Find overlaps between p300 peaks and the histone modification mark
+overlap_H3K4me3 <- findOverlaps(peaks_p300, peaks_H3K4me3)
+
+# Calculate the proportion of p300 peaks overlapping with the histone modification mark
+proportion_overlap_H3K4me3 <- length(unique(subjectHits(overlap_H3K4me3))) / length(peaks_p300)
+
+# Print the proportion of overlap
+print(paste("Proportion of p300 peaks overlapping with H3K4me3:", proportion_overlap_H3K4me3))
+```
+
+*For H3K4me1*
+```{r}
+# Find overlaps between p300 peaks and the histone modification mark
+overlap_H3K4me1 <- findOverlaps(peaks_p300, peaks_H3K4me1)
+
+# Calculate the proportion of p300 peaks overlapping with the histone modification mark
+proportion_overlap_H3K4me1 <- length(unique(subjectHits(overlap_H3K4me1))) / length(peaks_p300)
+
+# Print the proportion of overlap
+print(paste("Proportion of p300 peaks overlapping with H3K4me3:", proportion_overlap_H3K4me1))
+```
+
+*For H3K27ac*
+```{r}
+# Find overlaps between p300 peaks and the histone modification mark
+overlap_H3K27ac <- findOverlaps(peaks_p300, peaks_H3K27ac)
+
+# Calculate the proportion of p300 peaks overlapping with the histone modification mark
+proportion_overlap_H3K27ac <- length(unique(subjectHits(overlap_H3K27ac))) / length(peaks_p300)
+
+# Print the proportion of overlap
+print(paste("Proportion of p300 peaks overlapping with H3K4me3:", proportion_overlap_H3K27ac))
+```
+
+*For H3K27me3*
+```{r}
+# Find overlaps between p300 peaks and the histone modification mark
+overlap_H3K27me3 <- findOverlaps(peaks_p300, peaks_H3K27me3)
+
+# Calculate the proportion of p300 peaks overlapping with the histone modification mark
+proportion_overlap_H3K27me3 <- length(unique(subjectHits(overlap_H3K27me3))) / length(peaks_p300)
+
+# Print the proportion of overlap
+print(paste("Proportion of p300 peaks overlapping with H3K4me3:", proportion_overlap_H3K27me3))
+```
