@@ -1,0 +1,85 @@
+---
+title: "assignment"
+author: "Signe G"
+date: "2024-03-17"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+suppressPackageStartupMessages({
+  library(AnnotationHub)
+  library(rtracklayer)
+  library(epiwraps)
+  library(GenomicRanges)
+  library(R.utils)
+})
+ah <- AnnotationHub()
+
+```
+
+*loading the peaks for mECS*
+```{r}
+peaks_H3K4me3 <- rtracklayer::import("C:/Users/grue/Documents/Universitetet/Udveksling 2024/Courses/Bioinformatics for regulatory genomics/Assignements/Week 4/week4/H3K4me3.bed", format="narrowPeak")
+
+peaks_H3K27me3 <- rtracklayer::import("C:/Users/grue/Documents/Universitetet/Udveksling 2024/Courses/Bioinformatics for regulatory genomics/Assignements/Week 4/week4/H3K27me3.bed", format="narrowPeak")
+
+```
+
+
+*Hepatocyte H3K27me3*
+```{r, eval=FALSE}
+download.file("https://www.encodeproject.org/files/ENCFF184ILS/@@download/ENCFF184ILS.bed.gz", dest = "HepH3K27me3R.bed.gz", mode = "wb")
+gunzip("C:/Users/grue/Documents/Universitetet/Udveksling 2024/Courses/Bioinformatics for regulatory genomics/Assignements/Week 5/HepH3K27me3R.bed.gz")
+```
+
+*Hepatocyte H3K4me3*
+```{r, eval=FALSE}
+download.file("https://www.encodeproject.org/files/ENCFF588HJN/@@download/ENCFF588HJN.bed.gz", dest = "HepH3K4me3R.bed.gz", mode = "wb")
+gunzip("C:/Users/grue/Documents/Universitetet/Udveksling 2024/Courses/Bioinformatics for regulatory genomics/Assignements/Week 5/HepH3K4me3R.bed.gz")
+
+```
+
+*Loading the peaks*
+```{r}
+peaks_HepH3K4me3 <- rtracklayer::import("C:/Users/grue/Documents/Universitetet/Udveksling 2024/Courses/Bioinformatics for regulatory genomics/Assignements/Week 5/HepH3K4me3R.bed", format="narrowPeak")
+peaks_HepH3K27me3 <- rtracklayer::import("C:/Users/grue/Documents/Universitetet/Udveksling 2024/Courses/Bioinformatics for regulatory genomics/Assignements/Week 5/HepH3K27me3R.bed", format="narrowPeak")
+```
+
+**Find bivalent regions (H3K27me3 + H3K4me3)**
+```{r}
+overlap_bivalent <- subsetByOverlaps(peaks_H3K4me3, peaks_H3K27me3)
+number_overlap_bivalent <- length(unique(overlap_bivalent))
+number_overlap_bivalent
+```
+
+**Find bivalent regions for hepatocytes (H3K27me3 + H3K4me3)**
+```{r}
+overlap_bivalent_hep <- subsetByOverlaps(peaks_HepH3K4me3, peaks_HepH3K27me3)
+number_overlap_bivalent_hep <- length(unique(overlap_bivalent_hep))
+number_overlap_bivalent_hep
+```
+
+**Overlap with mESC bivalent domain with hepatocyte H3K27me3**
+```{r}
+overlap_mESC_HepH3K27me3 <- findOverlaps(overlap_bivalent, peaks_HepH3K27me3)
+number_overlaps_H3K27me3 <- length(unique(queryHits(overlap_mESC_HepH3K27me3)))
+number_overlaps_H3K27me3
+```
+**Overlap with mECS bivalent domain with hepatocyte H3K4me3**
+```{r}
+overlap_mESC_HepH3K4me3 <- findOverlaps(overlap_bivalent, peaks_HepH3K4me3)
+number_overlaps_H3K4me3 <- length(unique(queryHits(overlap_mESC_HepH3K4me3)))
+number_overlaps_H3K4me3
+```
+**Overlap between the bivalent domain in mESC and hepatocytes**
+```{r}
+total_overlaps <- findOverlaps(overlap_bivalent, overlap_bivalent_hep)
+number_total_overlaps <- length(unique(queryHits(total_overlaps)))
+number_total_overlaps
+```
+
+
