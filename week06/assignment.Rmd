@@ -1,0 +1,83 @@
+---
+title: "assignment"
+author: "Signe G"
+date: "2024-04-14"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+suppressPackageStartupMessages({
+  library(AnnotationHub)
+  library(GenomicRanges)
+  library(ggplot2)
+  library(motifmatchr) 
+  library(Biostrings) 
+  library(MotifDb) 
+  library(TFBSTools) 
+  library(universalmotif) 
+  library(PWMEnrich)
+})
+```
+
+**Get the peaks of TF GATA4**
+```{r}
+download.file("https://www.encodeproject.org/files/ENCFF102EKP/@@download/ENCFF102EKP.bed.gz", "mHEP_GATA4_ENCAN847ZMF.bed.gz")
+peaks <- rtracklayer::import("mHEP_GATA4_ENCAN847ZMF.bed.gz", format="NarrowPeak")
+seqlevelsStyle(peaks) <- "Ensembl"
+peaks_chr1 <- peaks[seqnames(peaks)=="1"]
+```
+
+**Get the genome**
+```{r}
+ah <- AnnotationHub()
+genome <- ah[["AH88477"]]
+genome_seqs <- import(genome)
+```
+
+**Find the motif**
+```{r}
+motifs <- MotifDb::query(MotifDb, 'GATA4')
+names(motifs)
+motif <- motifs[["Mmusculus-jaspar2018-Gata4-MA0482.1"]]
+view_motifs(motif)
+```
+
+**Find the motif in the peak data**
+```{r}
+Biostrings::writeXStringSet(genome_seqs, "genome.fa")
+motif2 <- convert_motifs(motif, class="TFBSTools-PWMatrix")
+moi <- motifmatchr::matchMotifs(motif2, subject=peaks_chr1, genome=Rsamtools::FaFile("genome.fa"), out="positions")
+moi <- moi[[1]] 
+```
+
+**Scan the whole genome**
+```{r}
+motif_across_genome <- matchMotifs(motif2, subject=genome_seqs, out="positions")[[1]]
+names(motif_across_genome) <- names(genome_seqs)
+motif_across_genome <- as(motif_across_genome, "GRanges")
+```
+
+
+```{r}
+#Identify Peaks Containing a Motif for the Factor
+peaks_with_motif <- subsetByOverlaps(peaks_chr1, moi)
+
+#Calculate the Proportion
+proportion_peaks_with_motif <- length(peaks_with_motif) / length(peaks_chr1) * 100
+
+#Identify Instances of the Motif Bound by GATA4
+motif_instances_bound_by_factor <- subsetByOverlaps(motif_across_genome, peaks_chr1)
+
+#Calculate the Proportion
+proportion_motif_instances_bound_by_factor <- length(motif_instances_bound_by_factor) / length(motif_across_genome) * 100
+
+cat("Of the", length(peaks), "peaks,", length(peaks_with_motif), "(", proportion_peaks_with_motif, "%) contain a motif for GATA4.\n")
+cat("Of all instances of GATA4 motifs in the genome,", length(moi), "(", proportion_motif_instances_bound_by_factor, "%) overlap with a peak.\n")
+
+```
+
+
