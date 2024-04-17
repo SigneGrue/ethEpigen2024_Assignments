@@ -407,20 +407,20 @@ moi &lt;- moi[[1]] </code></pre>
 <pre class="r"><code>motif_across_genome &lt;- matchMotifs(motif2, subject=genome_seqs, out=&quot;positions&quot;)[[1]]
 names(motif_across_genome) &lt;- names(genome_seqs)
 motif_across_genome &lt;- as(motif_across_genome, &quot;GRanges&quot;)</code></pre>
-<pre class="r"><code>#Identify Peaks Containing a Motif for the Factor
+<pre class="r"><code>#Identify Peaks Containing a Motif for GATA4
 peaks_with_motif &lt;- subsetByOverlaps(peaks_chr1, moi)
 
 #Calculate the Proportion
 proportion_peaks_with_motif &lt;- length(peaks_with_motif) / length(peaks_chr1) * 100
 
-#Identify Instances of the Motif Bound by GATA4
+#Identify Instances of the Motif Bound by GATA4 across the whole genome
 motif_instances_bound_by_factor &lt;- subsetByOverlaps(motif_across_genome, peaks_chr1)
 
 #Calculate the Proportion
 proportion_motif_instances_bound_by_factor &lt;- length(motif_instances_bound_by_factor) / length(motif_across_genome) * 100
 
-cat(&quot;Of the&quot;, length(peaks), &quot;peaks,&quot;, length(peaks_with_motif), &quot;(&quot;, proportion_peaks_with_motif, &quot;%) contain a motif for GATA4.\n&quot;)</code></pre>
-<pre><code>## Of the 23696 peaks, 288 ( 18.34395 %) contain a motif for GATA4.</code></pre>
+cat(&quot;Of the&quot;, length(peaks_chr1), &quot;peaks,&quot;, length(peaks_with_motif), &quot;(&quot;, proportion_peaks_with_motif, &quot;%) contain a motif for GATA4.\n&quot;)</code></pre>
+<pre><code>## Of the 1570 peaks, 288 ( 18.34395 %) contain a motif for GATA4.</code></pre>
 <pre class="r"><code>cat(&quot;Of all instances of GATA4 motifs in the genome,&quot;, length(moi), &quot;(&quot;, proportion_motif_instances_bound_by_factor, &quot;%) overlap with a peak.\n&quot;)</code></pre>
 <pre><code>## Of all instances of GATA4 motifs in the genome, 307 ( 0.07303698 %) overlap with a peak.</code></pre>
 
