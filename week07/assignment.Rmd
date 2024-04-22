@@ -1,0 +1,87 @@
+---
+title: "assignment"
+author: "Signe G"
+date: "2024-04-21"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+suppressPackageStartupMessages({
+  library(epiwraps)
+  library(AnnotationHub)
+  library(MotifDb)
+  library(universalmotif)
+  library(ensembldb)
+  library(ggplot2)
+  library(magick)
+})
+
+ah <- AnnotationHub(localHub=TRUE)
+ensdb <- ah[["AH89211"]] # mouse ensembldb object
+```
+
+```{r, eval=FALSE}
+download.file("https://ethz-ins.org/content/w7/w7_bw.zip", "w7_bw.zip")
+unzip("w7_bw.zip")
+```
+
+## Obtaining the sites with a SP1 motif
+```{r}
+# get GATA4 motif
+motif_SP1 <- MotifDb::query(MotifDb, c("SP1","Mus"))[[1]]
+motif2_SP1 <- universalmotif::convert_motifs(motif_SP1, class="TFBSTools-PFMatrix")
+
+genome <- ah[["AH68356"]]
+# get the sequence for chr19:
+chr19 <- import(genome)["19"]
+
+# find motif matches across chr19
+moi_SP1 <- motifmatchr::matchMotifs(motif2_SP1, chr19, out="positions", p.cutoff=1e-5)[[1]]
+# convert to GRanges
+moi_SP1 <- as(setNames(moi_SP1, names(chr19)), "GRanges")
+```
+
+## Obtaining the sites with a EGR1 motif
+```{r}
+# get p53 motif
+motif_EGR1 <- MotifDb::query(MotifDb, c("EGR1","Mus"))[[1]]
+motif2_EGR1 <- universalmotif::convert_motifs(motif_EGR1, class="TFBSTools-PFMatrix")
+
+
+# find motif matches across chr19
+moi_EGR1 <- motifmatchr::matchMotifs(motif2_EGR1, chr19, out="positions", p.cutoff=1e-5)[[1]]
+# convert to GRanges
+moi_EGR1 <- as(setNames(moi_EGR1,names(chr19)), "GRanges")
+```
+
+## Plotting signal around the SP1 motif occurences
+
+```{r, fig.width=8, fig.height=4}
+
+tracks <- c("NF cuts"="NF_cuts.bw", "Mono centers"="mono_centers.bw")
+
+sm_SP1 <- epiwraps::signal2Matrix(tracks, moi_SP1, w=5, extend=300)
+
+# plot the signals:
+nf <- getNormFactors(tracks, useSeqLevels="19", nwind=5000L)
+sm_SP1 <- renormalizeSignalMatrices(sm_SP1, scaleFactors = nf)
+
+plotEnrichedHeatmaps(sm_SP1, trim = 0.95, colors = c("white","darkred"))
+```
+
+
+## Plotting signal around the EGR1 motif occurences
+
+```{r, fig.width=8, fig.height=4}
+sm_EGR1<- epiwraps::signal2Matrix(tracks, moi_EGR1, w=5, extend=300)
+
+# plot the signals:
+sm_EGR1 <- renormalizeSignalMatrices(sm_EGR1, scaleFactors = nf)
+
+plotEnrichedHeatmaps(sm_EGR1, trim = 0.95, colors = c("white","darkred"))
+```
