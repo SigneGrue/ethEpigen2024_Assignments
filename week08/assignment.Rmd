@@ -1,0 +1,106 @@
+---
+title: "Assignment"
+author: "Signe G"
+date: "2024-04-28"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+suppressPackageStartupMessages({
+  library(epiwraps)
+  library(motifmatchr)
+  library(MotifDb)
+  library(universalmotif)
+  library(ggplot2)
+  library(SummarizedExperiment)
+  library(sechm)
+  library(BiocParallel)
+  library(chromVAR)
+  library(limma)
+})
+
+register(SnowParam(2))
+
+```
+
+```{r, eval=FALSE}
+options(timeout=6000)
+download.file("https://ethz-ins.org/content/mouse_mm38_hippocampus.peakCounts.SE.rds", "mouseHC_peakCounts.rds", mode="wb")
+
+```
+## Get the database of motifs
+
+```{r}
+motifs <- query(MotifDb, c("HOCOMOCOv11-core", "Hsapiens"))
+motifs <- do.call(TFBSTools::PWMatrixList, setNames(
+           universalmotif::convert_motifs(motifs, class="TFBSTools-PWMatrix"),
+           mcols(motifs)$geneSymbol))
+```
+
+
+## Get the genome
+```{r}
+library(BSgenome.Mmusculus.UCSC.mm10)
+genome <- BSgenome.Mmusculus.UCSC.mm10::BSgenome.Mmusculus.UCSC.mm10
+seqlevelsStyle(genome) <- "Ensembl"
+```
+
+
+```{r}
+se <- readRDS("mouseHC_peakCounts.rds")
+colData(se)
+se$condition <- c("Control_f", "Control_f", "Control_f", "Control_m", "Control_m", "Control_m", "FSS_f", "FSS_f", "FSS_f", "FSS_m", "FSS_m", "FSS_m")
+row.names(se) <-  as.character(granges(se))
+
+```
+
+*GC concentration*:
+```{r}
+suppressWarnings(se <- chromVAR::addGCBias(se, genome=genome))
+rowData(se)
+```
+
+```{r}
+suppressWarnings(moi <- motifmatchr::matchMotifs(motifs, subject=se, genome=genome))
+bg <- chromVAR::getBackgroundPeaks(se, niterations=1000)
+dev <- chromVAR::computeDeviations(object = se, annotations=moi,
+                                   background_peaks=bg)
+dev$condition <- factor(dev$condition)
+```
+
+
+## Differential analysis for stressed vs control
+
+```{r}
+mm_stress_vs_control <- model.matrix(~ dev$condition)
+fit_stress_vs_control <- eBayes(lmFit(assays(dev)$z, mm_stress_vs_control))
+res_stress_vs_control <- as.data.frame(topTable(fit_stress_vs_control, coef = "dev$conditionFSS_f", number = Inf))
+
+```
+
+```{r}
+res_stress_vs_control$TF <- row.names(res_stress_vs_control)
+sechm(dev, features = head(row.names(res_stress_vs_control)), assayName="z", top_annotation = c("condition", "depth"))
+```
+
+*Interpretation*
+We see that GCR and PRGR is upregulated in stressed mice compared to control mice. The rest of the motifs do not tell a clear story.
+
+## Differential analysis for female vs male
+```{r}
+mm_male_vs_female <- model.matrix(~ dev$condition)
+fit_male_vs_female <- eBayes(lmFit(assays(dev)$z, mm_male_vs_female))
+res_male_vs_female <- as.data.frame(topTable(fit_male_vs_female, coef = "dev$conditionControl_m", number = Inf))
+```
+
+```{r}
+res_male_vs_female$TF <- row.names(res_male_vs_female)
+sechm(dev, features = head(row.names(res_male_vs_female)), assayName="z", top_annotation = c("condition", "depth"))
+```
+
+*Interpretation*
+We see that the motifs ZFP42, TYY1, ZN384 especially, are upregulated in females and downregulated in males. 
