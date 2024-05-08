@@ -1,0 +1,23 @@
+---
+title: "Assignment"
+author: "Signe G"
+date: "2024-05-08"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+**Group members:**
+Gavin Graf, Audran Feuvrier and Signe Grue Andreassen
+
+**What is the topic:**
+Mice hepatocytes tested for low protein diet vs normal diet
+
+**What data will you be using:**
+This will be unpublished data procured by Gavin (from the Mansuy lab). It is ATAC-seq data. We will have the BAM files.
+
+**What are the questions we wish do answers:**
+Changes in DNA/chromatin accessibility in mice hepatocytes in responds to the change in diet. 
+
