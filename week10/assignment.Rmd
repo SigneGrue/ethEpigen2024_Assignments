@@ -1,0 +1,96 @@
+---
+title: "Assignment"
+author: "Signe G"
+date: "2024-05-12"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+suppressPackageStartupMessages({
+  library(GenomicRanges)
+  library(epiwraps)
+  library(ggplot2)
+  library(rGREAT) 
+})
+```
+
+
+```{r, eval=FALSE}
+options(timeout = 6000)
+unzip("w10.assignment.zip")
+list.files()
+```
+
+## Get the data
+
+```{r}
+tracks <- list.files(pattern="bw$")
+peaks <- list.files(pattern="bed$")
+# we first import the peaks
+peaks <- lapply(peaks, rtracklayer::import.bed)
+# we'll focus on the high-quality peaks
+peaks <- lapply(peaks, FUN=function(x) x[x$score>800])
+# we get the union of non-redundant regions
+regions <- reduce(unlist(GRangesList(peaks)))
+```
+
+## Clustering
+
+```{r}
+ese <- signal2Matrix(tracks, regions, extend=2000)
+set.seed(123)  # to ensure that it gives the same results everytime
+cl <- clusterSignalMatrices(ese, k=4)
+rowData(ese)$cluster <- cl
+```
+
+## Plot the clustering
+
+```{r}
+plotEnrichedHeatmaps(ese, row_split=cl,
+                     colors=c("white","darkred"))
+```
+
+## Trying different numbers of clusters
+
+```{r}
+cl2 <- clusterSignalMatrices(ese, k=2:10)
+ggplot(cl2$varExplained, aes(k, varExplained)) + geom_line()
+```
+
+## Plot using relative signal using 7 clusters
+
+```{r}
+cl <- clusterSignalMatrices(ese, k=7, scaleRows = TRUE)
+rowData(ese)$cluster <- cl
+d <- meltSignals(ese, splitBy=cl)
+ggplot(d, aes(position, mean, colour=sample)) + geom_line() + facet_wrap(~split)
+plotEnrichedHeatmaps(ese, row_split = cl, scale_rows = "global")
+```
+
+
+## Enrichment analysis
+
+```{r}
+split_regions <- split(rowRanges(ese), rowData(ese)$cluster)
+res <- great(split_regions[["7"]], gene_sets="GO:BP", tss_source="hg38", 
+             background=regions, cores=2)
+bp <- getEnrichmentTables(res)
+```
+
+## We plot the top Biological Processes:
+
+```{r, fig.width=9, fig.height=6}
+ggplot(head(bp,15), aes(fold_enrichment, reorder(description, p_adjust), 
+                        size=observed_region_hits, color=-log10(p_adjust))) + 
+  geom_point() + scale_color_viridis_c()
+```
+
+## Results
+
+We are observing different binding patterns for different regions. I have found 7 different binding patterns/clusters for the 3 TFs. The enrichment analysis shows that different biological processes are enriched, like cell differentiation, cellular developmental process, and cell projection assembly. 
+
+
